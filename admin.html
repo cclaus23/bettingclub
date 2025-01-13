@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Portal - Betting House</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+
+        header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .container {
+            padding: 20px;
+        }
+
+        .bet-card {
+            background: #fff;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .bet-card h3 {
+            margin: 0;
+        }
+
+        .bet-card .details {
+            margin: 10px 0;
+            font-size: 0.9em;
+            color: #555;
+        }
+
+        .bet-card button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .bet-card button:hover {
+            background-color: #45a049;
+        }
+
+        footer {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 0.8em;
+            color: #888;
+        }
+
+        .results-table {
+            margin-top: 20px;
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .results-table th, .results-table td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        .results-table th {
+            background-color: #f2f2f2;
+        }
+
+        .winners-list {
+            margin-top: 20px;
+        }
+
+        .bet-list {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Admin Portal - Betting House</h1>
+    </header>
+
+    <div class="container">
+        <div class="bet-list">
+            <!-- Bets will be dynamically populated here -->
+        </div>
+
+        <div class="winners-list">
+            <!-- Winners and payouts will be displayed here -->
+        </div>
+
+        <button onclick="window.location.href='index.html'">Back to Main Page</button>
+    </div>
+
+    <footer>
+        &copy; 2025 Betting House | Admin Portal
+    </footer>
+
+    <script>
+        const bets = JSON.parse(localStorage.getItem('bets')) || [];
+
+        // Function to set the results of a bet (Admin input)
+        function setBetResults(betId, winningChoice) {
+            const bet = bets.find(b => b.id === betId);
+
+            // Calculate the payout for each winner
+            const winners = bet.participants[winningChoice];
+            const totalPool = bet.totalBetAmount.Yes + bet.totalBetAmount.No;
+            const totalWinnersStake = winners.reduce((sum, winner) => sum + winner.amount, 0);
+            const payoutPerDollar = totalPool / totalWinnersStake;
+
+            // Calculate payouts for winners
+            winners.forEach(winner => {
+                winner.payout = (winner.amount * payoutPerDollar).toFixed(2);
+            });
+
+            // Save results
+            bet.results = winners;
+            localStorage.setItem('bets', JSON.stringify(bets));
+
+            // Refresh the bet list and winners display
+            displayBets();
+            displayWinners();
+
+            alert(`Results for '${bet.title}' are now set!`);
+        }
+
+        // Function to display bets on the admin page
+        function displayBets() {
+            const betList = document.querySelector('.bet-list');
+            betList.innerHTML = ""; // Clear previous bets list
+
+            bets.forEach(bet => {
+                const betCard = document.createElement('div');
+                betCard.className = 'bet-card';
+                betCard.innerHTML = `
+                    <h3>Bet ID: ${bet.id} - ${bet.title}</h3>
+                    <div class="details">
+                        Created by ${bet.creator}<br>
+                        Total Pool: $${(bet.totalBetAmount.Yes + bet.totalBetAmount.No).toFixed(2)}<br>
+                        Yes: $${bet.totalBetAmount.Yes.toFixed(2)} | No: $${bet.totalBetAmount.No.toFixed(2)}
+                    </div>
+                    <button onclick="setBetResults('${bet.id}', 'Yes')">Set Results - Yes</button>
+                    <button onclick="setBetResults('${bet.id}', 'No')">Set Results - No</button>
+                    <button onclick="clearBet('${bet.id}')">Clear Bet</button>
+                `;
+                betList.appendChild(betCard);
+            });
+        }
+
+        // Function to display winners and payouts on the admin page
+        function displayWinners() {
+            const winnersList = document.querySelector('.winners-list');
+            winnersList.innerHTML = ""; // Clear previous winners list
+
+            bets.forEach(bet => {
+                if (bet.results.length > 0) {
+                    const winnerTable = document.createElement('div');
+                    winnerTable.innerHTML = `
+                        <h3>Winners for Bet ID: ${bet.id} - ${bet.title}</h3>
+                        <table class="results-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Bet Amount</th>
+                                    <th>Payout</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${bet.results.map(winner => `
+                                    <tr>
+                                        <td>${winner.name}</td>
+                                        <td>$${winner.amount}</td>
+                                        <td>$${winner.payout}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    `;
+                    winnersList.appendChild(winnerTable);
+                }
+            });
+        }
+
+        // Function to clear a bet from both the admin page and the main page
+        function clearBet(betId) {
+            const betIndex = bets.findIndex(bet => bet.id === betId);
+            if (betIndex !== -1) {
+                // Remove the bet from the array
+                bets.splice(betIndex, 1);
+                // Update the localStorage with the new bets data
+                localStorage.setItem('bets', JSON.stringify(bets));
+
+                // Refresh the bet list and winners display
+                displayBets();
+                displayWinners();
+
+                alert(`Bet with ID: ${betId} has been cleared!`);
+            } else {
+                alert('Bet not found!');
+            }
+        }
+
+        // Initialize the page with bets stored in localStorage
+        displayBets();
+        displayWinners();
+    </script>
+</body>
+</html>
