@@ -1,0 +1,12 @@
+[
+  {
+    "id": "1",
+    "title": "Sample Bet",
+    "creator": "Admin",
+    "totalBetAmount": { "Yes": 100, "No": 50 },
+    "participants": {
+      "Yes": [{ "name": "User1", "amount": 50 }],
+      "No": [{ "name": "User2", "amount": 50 }]
+    }
+  }
+]
